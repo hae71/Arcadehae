@@ -1,0 +1,12 @@
+{
+  "name": "arcadehae",
+  "version": "1.0.0",
+  "description": "ArcadeHae — real-time 1v1 UNO challenge server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
