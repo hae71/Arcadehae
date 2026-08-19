@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadeHae — Live UNO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#100a24; --bg-1:#1a1240; --bg-2:#241a54; --line:#3a2c78;
+    --cyan:#28f0d8; --magenta:#ff4fa3; --gold:#ffc84a; --ink:#f2eefc; --ink-dim:#a99fd6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg-0);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;}
+  .marquee{
+    padding:18px 24px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);
+  }
+  .logo{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:22px;display:flex;align-items:center;gap:10px;}
+  .logo .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);}
+  .logo span{background:linear-gradient(90deg,var(--cyan),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .status-pill{font-size:12px;padding:6px 12px;border-radius:999px;background:var(--bg-1);border:1px solid var(--line);color:var(--ink-dim);}
+  .wrap{max-width:520px;margin:0 auto;padding:32px 20px 60px;}
+  .panel{background:var(--bg-1);border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center;}
+  .panel h2{font-family:'Chakra Petch',sans-serif;font-size:20px;margin-bottom:10px;}
+  .panel p{color:var(--ink-dim);font-size:14px;margin-bottom:18px;}
+  .spinner{width:44px;height:44px;margin:0 auto 18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--cyan);animation:spin .9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .primary-btn{background:linear-gradient(90deg,var(--cyan),#1fb0e0);color:#062024;font-weight:700;border:none;padding:13px 24px;border-radius:12px;font-size:14px;cursor:pointer;}
+  .table-card{background:var(--bg-1);border:1px solid var(--line);border-radius:20px;padding:22px;display:none;}
+  .table-card.active{display:block;}
+  .vs-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .player{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;}
+  .avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;}
+  .avatar.you{background:linear-gradient(135deg,var(--cyan),#1a8f9e);color:#062024;}
+  .avatar.rival{background:linear-gradient(135deg,var(--magenta),#8a2158);color:#2b0a1a;}
+  .turn-flag{font-family:'Chakra Petch',sans-serif;font-weight:700;color:var(--gold);font-size:13px;}
+  .pile-area{display:flex;justify-content:center;align-items:center;gap:18px;padding:20px 0;}
+  .uno-card{width:60px;height:86px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:24px;box-shadow:0 8px 18px rgba(0,0,0,0.4);}
+  .uno-card.red{background:linear-gradient(160deg,#ff4f6a,#b3162f);color:#fff;}
+  .uno-card.blue{background:linear-gradient(160deg,#3fb0ff,#0a5ba8);color:#fff;}
+  .uno-card.green{background:linear-gradient(160deg,#4fdc7a,#0f8a3e);color:#fff;}
+  .uno-card.yellow{background:linear-gradient(160deg,#ffe14f,#c99a0a);color:#3a2c00;}
+  .uno-card.back{background:repeating-linear-gradient(45deg,var(--bg-2) 0 6px, var(--bg-1) 6px 12px);border:2px solid var(--line);font-size:11px;color:var(--ink-dim);}
+  .uno-card.disabled{opacity:0.35;cursor:not-allowed;}
+  .hand-label{text-align:center;color:var(--ink-dim);font-size:12px;margin-bottom:10px;letter-spacing:1px;}
+  .hand{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
+  .hand .uno-card{width:52px;height:76px;font-size:20px;cursor:pointer;transition:transform .15s;}
+  .hand .uno-card:hover:not(.disabled){transform:translateY(-8px);}
+  .controls{display:flex;justify-content:center;gap:10px;margin-top:18px;}
+  .ghost-btn{background:none;border:1px solid var(--line);color:var(--ink-dim);padding:9px 16px;border-radius:10px;font-size:13px;cursor:pointer;}
+  .log-box{margin-top:16px;font-size:12px;color:var(--ink-dim);max-height:80px;overflow-y:auto;text-align:left;}
+  .result-banner{display:none;text-align:center;padding:40px 20px;}
+  .result-banner.active{display:block;}
+  .result-banner h2{font-family:'Chakra Petch',sans-serif;font-size:26px;margin-bottom:8px;}
+  .result-banner.win h2{color:var(--cyan);}
+  .result-banner.lose h2{color:var(--magenta);}
+</style>
+</head>
+<body>
+
+<div class="marquee">
+  <div class="logo"><span class="dot"></span><span>ArcadeHae</span></div>
+  <div class="status-pill" id="connStatus">Connecting...</div>
+</div>
+
+<div class="wrap">
+
+  <div class="panel" id="queuePanel">
+    <div class="spinner" id="queueSpinner" style="display:none;"></div>
+    <h2 id="queueTitle">Connect to play</h2>
+    <p id="queueSub">Open this page in a second browser tab (or share the link with a friend) to test a real live match.</p>
+    <button class="primary-btn" id="joinBtn">Find a Match</button>
+  </div>
+
+  <div class="table-card" id="matchPanel">
+    <div class="vs-row">
+      <div class="player">
+        <div class="avatar you">You</div>
+        <span id="yourCount">0 cards</span>
+      </div>
+      <div class="turn-flag" id="turnFlag">—</div>
+      <div class="player">
+        <div class="avatar rival">Rival</div>
+        <span id="rivalCount">0 cards</span>
+      </div>
+    </div>
+
+    <div class="pile-area">
+      <div class="uno-card back">Draw</div>
+      <div class="uno-card" id="topCard">-</div>
+    </div>
+
+    <div class="hand-label">YOUR HAND</div>
+    <div class="hand" id="handArea"></div>
+
+    <div class="controls">
+      <button class="ghost-btn" id="drawBtn">Draw Card</button>
+    </div>
+
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+  <div class="result-banner" id="resultBanner">
+    <h2 id="resultTitle"></h2>
+    <p id="resultSub" style="color:var(--ink-dim);margin-bottom:20px;"></p>
+    <button class="primary-btn" id="rematchBtn">Find Another Match</button>
+  </div>
+
+</div>
+
+<script>
+  const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+  let ws;
+  let myId = null;
+  let latestState = null;
+
+  function connect() {
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      document.getElementById('connStatus').textContent = 'Connected';
+    };
+
+    ws.onclose = () => {
+      document.getElementById('connStatus').textContent = 'Disconnected';
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      handleMessage(msg);
+    };
+  }
+
+  function handleMessage(msg) {
+    if (msg.type === 'queued') {
+      document.getElementById('queueSpinner').style.display = 'block';
+      document.getElementById('queueTitle').textContent = 'Finding you an opponent...';
+      document.getElementById('queueSub').textContent = 'Waiting for another player to join the queue.';
+      document.getElementById('joinBtn').style.display = 'none';
+    } else if (msg.type === 'match_found' || msg.type === 'state_update') {
+      latestState = msg.state;
+      myId = msg.state.you;
+      showMatch();
+      renderState(msg.state);
+    } else if (msg.type === 'match_over') {
+      latestState = msg.state;
+      showResult(msg.winner === msg.state.you);
+    } else if (msg.type === 'error') {
+      alert(msg.message);
+    }
+  }
+
+  function showMatch() {
+    document.getElementById('queuePanel').style.display = 'none';
+    document.getElementById('matchPanel').classList.add('active');
+    document.getElementById('resultBanner').classList.remove('active');
+  }
+
+  function showResult(won) {
+    document.getElementById('matchPanel').classList.remove('active');
+    const banner = document.getElementById('resultBanner');
+    banner.classList.add('active');
+    banner.classList.remove('win', 'lose');
+    banner.classList.add(won ? 'win' : 'lose');
+    document.getElementById('resultTitle').textContent = won ? '🏆 You Won!' : 'You Lost';
+    document.getElementById('resultSub').textContent = won
+      ? 'Prize credited to your wallet.'
+      : 'Better luck in the next challenge.';
+  }
+
+  function cardLabel(card) {
+    return card.number;
+  }
+
+  function renderState(state) {
+    document.getElementById('yourCount').textContent = state.yourHand.length + ' cards';
+    document.getElementById('rivalCount').textContent = state.opponentCardCount + ' cards';
+    document.getElementById('turnFlag').textContent =
+      state.currentPlayer === state.you ? 'YOUR TURN' : "RIVAL'S TURN";
+
+    const top = document.getElementById('topCard');
+    top.textContent = cardLabel(state.topCard);
+    top.className = 'uno-card ' + state.topCard.color;
+
+    const isYourTurn = state.currentPlayer === state.you;
+    const handArea = document.getElementById('handArea');
+    handArea.innerHTML = '';
+
+    state.yourHand.forEach((card) => {
+      const el = document.createElement('div');
+      const playable = card.color === state.topCard.color || card.number === state.topCard.number;
+      el.className = 'uno-card ' + card.color + (isYourTurn && playable ? '' : ' disabled');
+      el.textContent = cardLabel(card);
+      el.onclick = () => {
+        if (isYourTurn && playable) {
+          ws.send(JSON.stringify({ type: 'play_card', cardId: card.id }));
+        }
+      };
+      handArea.appendChild(el);
+    });
+
+    document.getElementById('drawBtn').disabled = !isYourTurn;
+    document.getElementById('drawBtn').style.opacity = isYourTurn ? 1 : 0.4;
+  }
+
+  document.getElementById('joinBtn').onclick = () => {
+    ws.send(JSON.stringify({ type: 'join_queue' }));
+  };
+
+  document.getElementById('drawBtn').onclick = () => {
+    ws.send(JSON.stringify({ type: 'draw_card' }));
+  };
+
+  document.getElementById('rematchBtn').onclick = () => {
+    document.getElementById('resultBanner').classList.remove('active');
+    document.getElementById('queuePanel').style.display = 'block';
+    document.getElementById('queueSpinner').style.display = 'none';
+    document.getElementById('queueTitle').textContent = 'Connect to play';
+    document.getElementById('queueSub').textContent = 'Click below to rejoin the queue.';
+    document.getElementById('joinBtn').style.display = 'inline-block';
+  };
+
+  connect();
+</script>
+
+</body>
+</html>
